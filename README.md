@@ -1,5 +1,7 @@
 # Najet101.github.io
 
+Switch Grass Model
+
 The model encompasses the following entities: 
 1.	Agents 
 •	Farmers: There are the main actors of this model. The strength of this modeling framework is the explicit use of spatially variable data, which cannot be accurately represented with at traditional LCA approach. Here, each farmer possesses various individual characteristics (e.g., age, land size, familiarity, risk aversion, etc.) that will affect their decision-making. 
@@ -10,3 +12,12 @@ The model encompasses the following entities:
 They represent the agricultural parcel owned by the farmers. Each patch is a parcel. Farmers can decide to increase or decrease the amount of land they devote to switchgrass at each time step.
 
 A farm agent has its own state, which is updated after every simulation period of one. The state of the farm agent includes personal characteristics and potential gain from planting switchgrass. The important parameters with respect to the individual characteristics of the farmers are detailed below.
+
+
+Symbiosis Model
+
+The model encompasses the following entities: 
+1.	Agents: They are the plants, represented by plant managers. In this model, 47 plants had been selected, 11 of them being already involved in a local symbiosis endeavor, the main activities are: sugar refinery, cereals and oil-seed grains agricultural cooperative, pulp and paper mills, plastics factories, cement plants, and biochemical transformation plants (Error! Reference source not found. and Error! Reference source not found.)
+2.	Patches: They are the cells where the plants are located, each plant releases CO2 on the patch underneath it.
+3.	Links between agents that represent the exchange of materials: if materials (inputs and outputs) are available. Links will be created between the plants. This model uses actual quantitative input data to represent the symbiosis development, Error! Reference source not found. summarizes the input and output flows for each participating plant.
+4.	GIS layers: Currently used as the geographic display of the roads, and the location of the plant. The plants use truck to exchange material with each other, in this model CO2 emissions from transportation is calculated using the distance between travelled during the delivery stage. 
