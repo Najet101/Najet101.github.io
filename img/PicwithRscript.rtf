@@ -1,0 +1,1054 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf510
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 ############ !!!!!!!!!!!!!!!!!!!!!!!!!! ##########################\
+ #Put this at the top of every file, unless you really really want to work with factors\
+ #this will save you a lot of confusion\
+ options(stringsAsFactors = FALSE)\
+\
+#these are from two separate packages\
+library(ggplot2)\
+\
+#used for hexagonal binning for one of the plots\
+library(hexbin)\
+\
+#used for reshaping the data, i.e. data in columns may need to be moved to individual rows, etc.\
+library(reshape2)\
+\
+#used for querying data, performing aggregations, filtering, etc.\
+library(sqldf)\
+\
+#working with network data\
+library(igraph)\
+\
+\
+\
+myDataFrame = read.table("/Volumes/snre-css/css-shared/Najet/R.Symbiosis/SymbiosisModelBS10\\ experiment2-10runs-table.csv", skip = 6, sep = ",", head=TRUE)\
+\
+summary(myDataFrame)\
+\
+myDataFrame$Value <- as.numeric(gsub(",", "", myDataFrame$Value))\
+\
+options(scipen=999)\
+\
+\
+###########################################################\
+################################################################\
+############ PARTNERSHIPS ############################################\
+#################################################################\
+###########################################################\
+\
+#### scatter POINTS ##### #######\
+\
+scatterplot = ggplot(data=myDataFrame, aes(x=step, y=countpartnerships)) + #use myDataFrame for the data, columns for x and y\
+  geom_point(aes(colour = runnumber)) + #we want to use points, colored by runnumber\
+  xlab("step") +  #specify x and y labels\
+  ylab("Number of Partnerships") + \
+  ggtitle("Partnerships between plants over time") #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+\
+#### Line POINTS ##### #######\
+\
+data1 = melt(myDataFrame,id=c("runnumber","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","total.Partnered","total.NonPartnered","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+\
+data1vf = dcast(data1[ data1$Learn=="TRUE" , ],\
+                step+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[3] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+ ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Average Count of Partnerships over time")\
+print(lineplot)\
+\
+#################################################\
+#############################################\
+#### Line POINTS learn comp ##### #######\
+#################################################\
+#############################################\
+\
+\
+data1 = melt(myDataFrame,id=c("runnumber","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","total.Partnered","total.NonPartnered","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+\
+data1vf = dcast(data1,\
+                step+Learn+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[4] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+  ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Average Count of Partnerships over time") +\
+  facet_grid (.~Learn,scales="free") \
+print(lineplot)\
+ggsave(lineplot, file="ParnershipLearnTest.png")\
+\
+######## learn and coop ################\
+\
+data1 = melt(myDataFrame,id=c("runnumber","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","total.Partnered","total.NonPartnered","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+\
+data1vf = dcast(data1,\
+                step+Learn+cultural.cooperation.prob+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[5] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+  ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Average Count of Partnerships over time") +\
+  facet_grid (cultural.cooperation.prob ~ Learn,scales="free") \
+print(lineplot)\
+ggsave(lineplot, file="ParnershipLearnTestandCoop.png")\
+######## just coop#######\
+\
+data1 = melt(myDataFrame,id=c("runnumber","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","total.Partnered","total.NonPartnered","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+\
+data1vf = dcast(data1,\
+                step+cultural.cooperation.prob+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[4] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+  ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Average Count of Partnerships over time") +\
+  facet_grid (.~cultural.cooperation.prob,scales="free") \
+print(lineplot)\
+ggsave(lineplot, file="ParnershipCoopTest.png")\
+###############\
+#########################\
+### involvment index ##################\
+###########################################\
+\
+data1 = melt(myDataFrame,id=c("runnumber","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","total.Partnered","total.NonPartnered","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+data1vf = dcast(data1,\
+                step+involvement.threshold.index+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[4] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+  ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Average Count of Partnerships over time") +\
+  facet_grid (.~involvement.threshold.index,scales="free") \
+print(lineplot)\
+ggsave(lineplot, file="ParnershipInvotlTest.png")\
+\
+\
+###############\
+#########################\
+### Partnered and nonPartnered##################\
+###########################################\
+\
+data1 = melt(myDataFrame,id=c("runnumber","countpartnerships","carbon.tax.price","cultural.cooperation.prob","Influence.threshold","check.influence.policy","carbon.tax","Learn","involvement.threshold.index","influence.radius","step","countplants","Mean.trust","Mean.doubt","Mean.Involvment","total.qty","Total.behaviour1.tax","Total.behaviour0.tax","Mean.behaviour1.tax","Mean.behaviour0.tax","Total.GHG.partnered","Total.GHG.nonpartnered","GHG.savings","co2.transport","Co2.transportOutside","Co2.Trans.savings"))\
+data1vf = dcast(data1,\
+                step+variable ~ .,\
+                fun.aggregate=mean)\
+colnames(data1vf)[3] = "avg_count"\
+\
+lineplot = ggplot(data=data1vf,aes(x=step,y=avg_count)) +\
+  geom_line() +\
+  ## geom_point( size=4, shape=21, fill="white") +\
+  ggtitle("Number of plant partnered and non-partnered over time") \
+  ##facet_grid (.~involvement.threshold.index,scales="free") \
+print(lineplot)\
+ggsave(lineplot, file="ParnershipInvotlTest.png")\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+lineplot = ggplot(data=myDataFrame, aes(x=step, y=countpartnerships)) + #use myDataFrame for the data, columns for x and y\
+  geom_line() +\
+  xlab("step") +  #specify x and y labels\
+  ylab("Number of Partnerships") + \
+  ggtitle("Average Count of Partnerships with learning variation over time") +\
+  facet_grid (.~Learn,scales="free") \
+\
+print(lineplot) #display the scatterplot\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - ACRES HARVESTED'), ]\
+\
+scatterplot = ggplot(data=newdata, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by runnumber\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres of Peanuts Harvested over time") + \
+    ggtitle("Peanuts harvested over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+\
+ggsave(scatterplot, file="ScatterPeanuts Harvest.png")\
+\
+\
+#### SCATTER ##### PEANUTS harvest #######\
+\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - ACRES HARVESTED'), ]\
+\
+scatterplot = ggplot(data=newdata, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by runnumber\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres of Peanuts Harvested over time") + \
+    ggtitle("Peanuts harvested over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+\
+ggsave(scatterplot, file="ScatterPeanuts Harvest.png")\
+\
+#### SCATTER ###### Peanuts Revenues#####\
+\
+newdata2 <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - ACRES PLANTED'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=myDataFrame$peanut.revenues, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("$") + \
+    ggtitle("Revenues for Peanuts over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterPeanuts Planted.png")\
+\
+\
+\
+#### SCATTER ###### Peanuts Price Received #####\
+\
+newdata3 <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - PRICE RECEIVED, MEASURED IN $ / LB'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=newdata3, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Price received in $ /lb ") + \
+    ggtitle("Price received for Peanuts over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterPeanuts PriceReceived.png")\
+\
+\
+\
+#### SCATTER ###### Peanuts Production #####\
+options(scipen=999)\
+newdata4 <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - PRODUCTION, MEASURED IN LB'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=newdata4, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Production in lb ") + \
+    ggtitle("Poduction of Peanuts over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterPeanuts Production.png")\
+\
+\
+###########################################################\
+################################################################\
+############ COTTON ############################################\
+#################################################################\
+###########################################################\
+\
+\
+\
+#### SCATTER ##### Cotton harvest #######\
+\
+newdata5 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES HARVESTED'), ]\
+\
+scatterplot = ggplot(data=newdata5, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by runnumber\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres of Cotton Harvested over time") + \
+    ggtitle("Cotton harvested over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+\
+ggsave(scatterplot, file="ScatterCotton Harvest.png")\
+\
+#### SCATTER ###### Cotton Planted S#####\
+\
+newdata6 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES PLANTED'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=newdata6, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres of Cotton Planted over time") + \
+    ggtitle("Cotton Planted over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterCotton Planted.png")\
+\
+\
+\
+#### SCATTER ###### Cotton Price Received #####\
+\
+newdata7 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - PRICE RECEIVED, MEASURED IN $ / LB'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=newdata7, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Price received in $ /lb ") + \
+    ggtitle("Price received for Cotton over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterCotton PriceReceived.png")\
+\
+\
+\
+#### SCATTER ###### Cotton Production #####\
+\
+newdata8 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - PRODUCTION, MEASURED IN $'), ]\
+\
+#just give me a quick scatterplot\
+scatterplot = ggplot(data=newdata8, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_point(aes(colour = Year)) + #we want to use points, colored by year\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Production in $ /lb ") + \
+    ggtitle("Poduction of Cotton over time")  #give the plot a title\
+\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="ScatterCotton Production.png")\
+\
+\
+\
+\
+\
+\
+###########################################################\
+################################################################\
+############ PEANUTS ############################################\
+#################################################################\
+###########################################################\
+\
+\
+\
+#### HEXBIN #### Peanuts Harvest #######\
+\
+#create a 2d histogram with hexagonal bins\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - ACRES HARVESTED'), ]\
+\
+hexBinExample = ggplot(data=newdata, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Acres of Peanuts") +\
+    ggtitle("Peanuts harvested over time") #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinPeanuts Harvest.png")\
+ \
+ \
+\
+#### HEXBIN #### Peanuts PLANTING #######\
+\
+newdata2 <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - ACRES PLANTED'), ]\
+\
+ #create a 2d histogram with hexagonal bins\
+hexBinExample = ggplot(data=newdata2, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Acres of Peanuts") +\
+    ggtitle("Peanuts Planted over time")  #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinPeanuts Planted.png")\
+\
+\
+#### HEXBIN #### Peanuts Price receiced #######\
+ #create a 2d histogram with hexagonal bins\
+newdata3 <- myDataFrame[ which(myDataFrame$DataItem=='PEANUTS - PRICE RECEIVED, MEASURED IN $ / LB'), ]\
+\
+hexBinExample = ggplot(data=newdata3, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Price received in $ /lb ") + \
+    ggtitle("Price received for Peanuts over time")  #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinPeanuts Pricereceived.png")\
+\
+\
+###########################################################\
+################################################################\
+############ COTTON ############################################\
+#################################################################\
+###########################################################\
+\
+#### HEXBIN #### Cotton Harvest #######\
+\
+#create a 2d histogram with hexagonal bins\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES HARVESTED'), ]\
+\
+hexBinExample = ggplot(data=newdata, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Acres of Cotton") +\
+    ggtitle("Cotton harvested over time") #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinCotton Harvest.png")\
+ \
+ \
+\
+#### HEXBIN #### Cotton PLANTING #######\
+\
+newdata2 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES PLANTED'), ]\
+\
+ #create a 2d histogram with hexagonal bins\
+hexBinExample = ggplot(data=newdata2, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Acres of Cotton") +\
+    ggtitle("Cotton Planted over time")  #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinCotton Planted.png")\
+\
+\
+#### HEXBIN #### Cotton Price receiced #######\
+\
+ #create a 2d histogram with hexagonal bins\
+newdata3 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - PRICE RECEIVED, MEASURED IN $ / LB'), ]\
+\
+hexBinExample = ggplot(data=newdata3, aes(x=Year, y=Value, fill=..density..)) + \
+    stat_binhex(bins=10) +\
+    ylab("Price received in $ /lb ") + \
+    ggtitle("Price received for Cotton over time")  #give the plot a title\
+print(hexBinExample)\
+ggsave(hexBinExample, file="hexBinCotton Pricereceived.png")\
+\
+\
+\
+\
+###########################################################\
+################################################################\
+############ PEANUTS ############################################\
+#################################################################\
+###########################################################\
+\
+\
+### Histogram #### Peanuts ####\
+\
+fileprefix="histogramPeanutsHarv"\
+val = 3\
+filename = paste(fileprefix, val, ".png", sep="")\
+\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES HARVESTED'), ]\
+\
+#actually, I'm in the mood for a histogram\
+simpleHistogram = ggplot(data=newdata, aes(x=Year)) + geom_histogram() +\
+ggtitle("Peanuts harvested over time") #give the plot a title\
+print(simpleHistogram)\
+ggsave(simpleHistogram, file=filename) \
+\
+#### histogram #### planting ######\
+\
+fileprefix="histogramPlanting"\
+val = 3\
+filename = paste(fileprefix, val, ".png", sep="")\
+\
+#actually, I'm in the mood for a histogram\
+simpleHistogram = ggplot(data=myDataFrame, aes(x=PlantingFarmers)) + geom_histogram() +\
+ggtitle("Planting Farmers over time") \
+print(simpleHistogram)\
+ggsave(simpleHistogram, file=filename) \
+\
+##### histogram ### Profitable ####\
+\
+fileprefix="histogramProfitable"\
+val = 3\
+filename = paste(fileprefix, val, ".png", sep="")\
+\
+#actually, I'm in the mood for a histogram\
+simpleHistogram = ggplot(data=newdata, aes(x=Year)) + geom_histogram() +\
+ggtitle("Profitable Farmers over time") \
+print(simpleHistogram)\
+ggsave(simpleHistogram, file=filename) \
+\
+\
+###### Boxplot ###### Befarmers\
+\
+newdata <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES HARVESTED'), ]\
+\
+ggplot(data=newdata, aes(x=Year, y=Value, group=Year)) + \
+    geom_boxplot()\
+\
+boxplot = ggplot(data=newdata, aes(x=Year, y=Value, group=round(Year/10))) + \
+    geom_boxplot() +\
+    ylab("Acres of Peanuts") +\
+    ggtitle("Peanuts harvested over time") #give the plot a title\
+print(boxplot)\
+ggsave(boxplot, file="boxplotPeanuts Harv.png")\
+\
+\
+###### Boxplot ##### planting ####\
+\
+ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers, group=Step)) + \
+    geom_boxplot()\
+\
+boxplot = ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers, group=round(Step/5))) + \
+    geom_boxplot()\
+   ggtitle("Planting Farmers over time") \
+print(boxplot)\
+ggsave(boxplot, file="boxplotPlanting.png")\
+\
+##### Boxplot ### Profitable ####\
+\
+ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers, group=Step)) + \
+    geom_boxplot()\
+\
+boxplot = ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers, group=round(Step/5))) + \
+    geom_boxplot() +\
+   ggtitle("Profitable Farmers over time") \
+\
+print(boxplot)\
+ggsave(boxplot, file="boxplotProfitable.png")\
+\
+\
+###########################################################\
+################################################################\
+############ COTTON ############################################\
+#################################################################\
+###########################################################\
+\
+\
+newdata5 <- myDataFrame[ which(myDataFrame$DataItem=='COTTON - ACRES HARVESTED'), ]\
+\
+ggplot(data=newdata5, aes(x=Year, y=Value, group=Year)) + \
+    geom_boxplot()\
+\
+boxplot = ggplot(data=newdata, aes(x=Year, y=Value, group=round(Year/10))) + \
+    geom_boxplot() +\
+    ylab("Acres of Cotton") +\
+    ggtitle("Cotton harvested over time") #give the plot a title\
+print(boxplot)\
+\
+\
+\
+######### heatmap### befarmers ########\
+#similar example, but just give me a heatmap, without the scatter plot\
+simpleHeatMapOfScatterPlot = ggplot(data=myDataFrame, aes(x=Step, y=CountBeFarmers)) + \
+    stat_density2d(geom="tile", aes(fill = ..density..), contour = FALSE) +\
+   ylab("$ per Lb") +\
+   ggtitle("Breakeven Farmers over time")\
+print(simpleHeatMapOfScatterPlot)\
+ggsave(simpleHeatMapOfScatterPlot, file="simpleHeatMapBefarmers.png") \
+\
+\
+####### heatmap### planting #########\
+\
+#similar example, but just give me a heatmap, without the scatter plot\
+simpleHeatMapOfScatterPlot = ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers)) + \
+    stat_density2d(geom="tile", aes(fill = ..density..), contour = FALSE) +\
+   ggtitle("Planting Farmers over time")  \
+print(simpleHeatMapOfScatterPlot)\
+ggsave(simpleHeatMapOfScatterPlot, file="simpleHeatMapPlanting.png") \
+\
+\
+####### heatmap### Profitable #########\
+\
+#similar example, but just give me a heatmap, without the scatter plot\
+simpleHeatMapOfScatterPlot = ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers)) + \
+    stat_density2d(geom="tile", aes(fill = ..density..), contour = FALSE) +\
+   ggtitle("Profitable Farmers over time")  \
+print(simpleHeatMapOfScatterPlot)\
+ggsave(simpleHeatMapOfScatterPlot, file="simpleHeatMapProfitable.png") \
+\
+\
+##############################################\
+############# MATRIX PLOTS #####################\
+###################################################\
+\
+###### MatrixBoxplot #### befarmers ######\
+\
+newdataGrid <- myDataFrame[ which(myDataFrame$DataItem=='peanuts.acresHarv' & myDataFrame$DataItem=='cotton.acresHarv'), ]\
+\
+\
+boxplot = ggplot(data=newdataGrid, aes(x=Year, y=Value,)) + \
+    geom_boxplot() + \
+    facet_grid(peanuts.acresHarv ~ cotton.acresHarv, scales="free") +\
+    ggtitle("Peanuts and Cotton hoversting comparison") \
+print(boxplot)\
+ggsave(boxplot, file="Matrix_facetgrid_PeanCottHarv.png")\
+\
+##### MatrixBoxplot #### planting ####\
+\
+boxplot = ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers, group=round(Step/5))) + \
+    geom_boxplot() + \
+    facet_grid(learn ~ ., scales="free") +\
+   ggtitle("Planting Farmers over time with Learning variation") \
+print(boxplot)\
+ggsave(boxplot, file="Matrix_facetgrid_Planting.png")\
+\
+\
+#### Matrixboxplot ### profitable ####\
+\
+\
+boxplot = ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers, group=round(Step/5))) + \
+    geom_boxplot() + \
+    facet_grid(learn ~ ., scales="free") +\
+    ggtitle("Profitable Farmers over time with Learning variation") \
+print(boxplot)\
+ggsave(boxplot, file="Matrix_facetgrid_Profitable.png")\
+\
+#### Matrix lines #### befarmers ####\
+\
+facetGridWithLines = ggplot(data=myDataFrame, aes(x=Step, y=CountBeFarmers)) + \
+    geom_line() + \
+    facet_grid(learn ~ ., scales="free") +\
+    ggtitle("Breakeven Farmers over time with Learning variation") \
+print(facetGridWithLines)\
+ggsave(facetGridWithLines, file="Matrix_facetgridLine_Befarmers.png")\
+\
+##### Matrix lines #### planting ######\
+\
+facetGridWithLines = ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers)) + \
+    geom_line() + \
+    facet_grid(learn ~ ., scales="free") +\
+   ggtitle("Planting Farmers over time with Learning variation") \
+print(facetGridWithLines)\
+ggsave(facetGridWithLines, file="Matrix_facetgridLine_Planting.png")\
+\
+\
+##### Matrix line s#### profitable###\
+\
+facetGridWithLines = ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers)) + \
+    geom_line() + \
+    facet_grid(learn ~ ., scales="free") +\
+   ggtitle("Profitable Farmers over time with Learning variation") \
+print(facetGridWithLines)\
+ggsave(facetGridWithLines, file="Matrix_facetgridLine_Planting.png")\
+\
+##### Matrix POINTSs #### ##########\
+\
+#### Matrix Points #### befarmers ####\
+\
+boxplot = ggplot(data=myDataFrame, aes(x=Step, y=CountBeFarmers, group=round(Step/5))) + \
+    geom_boxplot() + \
+    facet_grid(learn ~ ., scales="free") +\
+    ggtitle("Breakeven Farmers over time with Learning variation") \
+print(boxplot)\
+ggsave(facetGridWithPoints, file="facetGridWithPoints_Befarmers.png")\
+\
+#### Matrix Points #### Planting ####\
+\
+facetGridWithPoints = ggplot(data=myDataFrame, aes(x=Step, y=PlantingFarmers)) + \
+    geom_point() + \
+    facet_grid(learn ~ ., scales="free") +\
+   ggtitle("Planting Farmers over time with Learning variation") \
+\
+print(facetGridWithPoints)\
+ggsave(facetGridWithPoints, file="facetGridWithPoints_Plantingfarmers.png") \
+\
+#### Matrix Points #### Profitable ####\
+\
+#same as above, but look at the fraction of agents in the giant component\
+facetGridWithPoints = ggplot(data=myDataFrame, aes(x=Step, y=ProfitableFarmers)) + \
+    geom_point() + \
+    facet_grid(learn ~ ., scales="free") +\
+   ggtitle("Profitable Farmers over time with Learning variation") \
+\
+print(facetGridWithPoints)\
+ggsave(facetGridWithPoints, file="facetGridWithPoints_Profitablefarmers.png")\
+\
+\
+\
+\
+ \
+\
+####################################\
+####################################\
+\
+########################################\
+#######################################\
+####### c02 WORKING\
+\
+SG PRODUCTION  #########################\
+#######################################\
+\
+dataSGprod = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","CountBeFarmers","CountNoBefarmers","PlantingFarmers","ProfitableFarmers","learn","PriceChoc","Step","MeanAge","NewPrice","MeanSGRevenues","MeanInterestScore","Co2FromSG","Co2FromGasandCoal","Co2FromGasandNatGas"))\
+\
+dataSGprodvf = dcast(dataSGprod,\
+                      learn+Step+PriceChoc+variable ~ .,\
+                      fun.aggregate=mean)\
+colnames(dataSGprodvf)[5] = "avg_count"\
+\
+areaplot = ggplot(data=dataSGprodvf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    facet_grid(learn ~ PriceChoc, scales="free",shrink = TRUE, labeller=label_both) +\
+    ggtitle("Total Switchgrass Production in response to\\nLearning and Price Shock variation")\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_SGproductionVF2.png")\
+\
+\
+CO2 COMPARISION  #########################\
+#######################################\
+\
+\
+dataCo2comp = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","learn","TotalProductionSG","PriceChoc","Step","MeanAge","MeanNbfieldPlanted","MeanMyAreaPlanted","MeanSGRevenues","NewPrice","MeanInterestScore"))\
+\
+dataCo2compvf = dcast(dataCo2comp,\
+                      learn+Step+PriceChoc+variable ~ .,\
+                      fun.aggregate=mean)\
+colnames(dataCo2compvf)[5] = "avg_count"\
+\
+areaplot = ggplot(data=dataCo2compvf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    facet_grid(learn ~ PriceChoc, scales="free",shrink = TRUE, labeller=label_both) +\
+    ggtitle("Co2 comparison in response to\\nLearning and Price Shock Variation")\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_Co2comparisionVF2.png")\
+\
+##############################\
+\
+ \
+###################\
+FACET GRID FARMERS COUNT WORKING #######################\
+###############################################\
+\
+dataFarmers = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","learn","TotalProductionSG","PriceChoc","Step","MeanAge","MeanNbfieldPlanted","MeanMyAreaPlanted","MeanSGRevenues","NewPrice","MeanInterestScore","Co2FromSG","Co2FromGasandCoal","Co2FromGasandNatGas"))\
+\
+dataFarmersvf = dcast(dataFarmers,\
+                      learn+Step+PriceChoc+variable ~ .,\
+                      fun.aggregate=mean)\
+colnames(dataFarmersvf)[5] = "avg_count"\
+\
+areaplot = ggplot(data=dataFarmersvf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    facet_grid(learn ~ PriceChoc, scales="free",shrink = TRUE, labeller=label_both) +\
+    ggtitle("Average count of Agents in response to\\nLearning and Price Shock variation")\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_grid_FarmersVF2.png")\
+\
+#######################################################\
+ facet wrap #########################################\
+#######################################################\
+\
+\
+#### FACETWRAP #### Befarmers #######indices = which(myDataFrame$Step == 5)\
+indices = which((myDataFrame$Step %% 5) == 0)\
+df = myDataFrame[indices, colnames(myDataFrame)]\
+#WARNING - make sure that you include the smaller dataframe, otherwise this will try to plot the whole set of data, and your computer will explode\
+heatMapFacetWrap = ggplot(data=df, aes(x=learn, y=PriceChoc)) +\
+    geom_tile(aes(fill=CountBeFarmers)) +\
+    scale_fill_continuous("Number\\nof\\nbefarmers") +\
+    facet_wrap(~ Step) +\
+    xlab("learn") +\
+    ylab("PriceChoc") +\
+    ggtitle("Heatmap of Breakeven farmers at steps")\
+print(heatMapFacetWrap)\
+ggsave(heatMapFacetWrap, file="heatMapFacetWrap_Befarmers.png")\
+\
+##################################\
+####################################\
+\
+########### WORKING FACET WRAP ########################################\
+FARMERS#############################\
+#######################################################\
+\
+dataFarmers = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","learn","TotalProductionSG","PriceChoc","Step","MeanAge","MeanNbfieldPlanted","MeanMyAreaPlanted","MeanSGRevenues","NewPrice","MeanInterestScore","Co2FromSG","Co2FromGasandCoal","Co2FromGasandNatGas"))\
+\
+\
+dataFarmersvf = dcast(dataFarmers[ dataFarmers$learn=="true" , ],\
+                      Step+PriceChocAtStep+variable ~ .,\
+                      fun.aggregate=mean)\
+colnames(dataFarmersvf)[4] = "avg_count"\
+\
+areaplot = ggplot(data=dataFarmersvf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    ggtitle("Average count of Agents in response to\\nLearning and Price Choc variation") +        \
+    facet_wrap (~PriceChocAtStep,scales="free")  \
+\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_wrap_Farmers.png")\
+\
+\
+\
+########@@@@@@@@@@@@@@@@\
+############\
+FACET WRAP SG PROD\
+#################\
+\
+dataSGprod = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","CountBeFarmers","CountNoBefarmers","PlantingFarmers","ProfitableFarmers","MeanNbfieldPlanted","MeanMyAreaPlanted","learn","PriceChoc","Step","MeanAge","MeanSGRevenues","NewPrice","MeanInterestScore","Co2FromSG","Co2FromGasandCoal","Co2FromGasandNatGas"))\
+\
+dataSGprodvf = dcast(dataSGprod[ dataSGprod$learn=="true" , ],\
+                     Step+PriceChocAtStep+variable ~ .,\
+                     fun.aggregate=mean)\
+colnames(dataSGprodvf)[4] = "avg_count"\
+\
+areaplot = ggplot(data=dataSGprodvf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    ggtitle("Total Switchgrass Production in response to\\n Price Choc variation at Step")+\
+    facet_wrap (~PriceChocAtStep,scales="free")  \
+\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_wrap_Sgprod.png")\
+\
+##############\
+Co2\
+############\
+\
+\
+dataCo2comp = melt(myDataFrame,id=c("runnumber","PriceOfBase","PriceOfSG","PriceChocAtStep","CountBeFarmers","CountNoBefarmers","PlantingFarmers","ProfitableFarmers","learn","MeanNbfieldPlanted","MeanMyAreaPlanted","TotalProductionSG","PriceChoc","Step","MeanAge","NewPrice","MeanSGRevenues","MeanInterestScore"))\
+\
+dataCo2compVf = dcast(dataCo2comp[ dataCo2comp$learn=="true" , ],\
+                      Step+PriceChocAtStep+variable ~ .,\
+                      fun.aggregate=mean)\
+colnames(dataCo2compVf)[4] = "avg_count"\
+\
+areaplot = ggplot(data=dataCo2compVf,aes(x=Step,y=avg_count)) +\
+    geom_area(aes(fill=variable)) +\
+    ggtitle("Co2 emissions comparison in response to\\n Price Shock variation at Step") +        facet_wrap (~PriceChocAtStep,scales="free")\
+\
+print(areaplot)\
+ggsave(areaplot, file="areaplot_wrap_co2comp.png")\
+\
+\
+\
+\
+\
+######################################################################################################\
+######################################################################################################\
+######################################################################################################\
+##############################                 ##############################\
+##############################  TEST TEST TEST #############################################\
+######################################################################################################\
+######################################################################################################\
+######################################################################################################\
+data.wide <- dcast(myDataFrame, Year ~ DataItem, value.var="Value", fun.aggregate = mean)\
+\
+\
+\
+NAME <- unique(myDataFrame[5])\
+newdata <- myDataFrame[,1:4]\
+for(name in NAME)\{\
+  tmp <- rep("NA", nrow(newdata))\
+  tmp[NAME==name] <- myDataFrame[NAME==name,6]\
+  newdata <- cbind(newdata, tmp)  \
+\}\
+\
+\
+NAME <- unique(myDataFrame[5])\
+data.wide <- myDataFrame[,1:4]\
+for(name in NAME)\{\
+  tmp <- rep("NA", nrow(data.wide))\
+  tmp[NAME==name] <- myDataFrame[NAME==name,6]\
+  data.wide <- cbind(data.wide, tmp)  \
+\}\
+\
+\
+\
+colnames(data.wide) <- c("Year","Period","State","Commodity","DataItem","Value","AG_LAND_INCL_BUILDINGS_ASSET_VALUE_MEASURED_IN_dollars_per_ACRE","COTTON_ACRES_HARVESTED","COTTON_ACRES_PLANTED","COTTON_PRICE_RECEIVED_MEASURED_IN_dollars_per_LB","COTTON_PRODUCTION_MEASURED_IN_LB_","FARM_OPERATIONS_ACRES_OPERATED","FARM_OPERATIONS_AREA_OPERATED_MEASURED_IN_ACRES_per_OPERATION","FARM_OPERATIONS_NUMBER_OF_OPERATIONS","LABOR_HIRED_WAGE_RATE_MEASURED_IN_dollars_per_HOUR","LABOR_HIRED_CROP_&_ANIMAL_WORKERS_WAGE_RATE_MEASURED_IN_dollars_per_HOUR","LABOR_HIRED_CROP_WORKERS_WAGE_RATE_MEASURED_IN_dollars_per_HOUR","PEANUTS_ACRES_HARVESTED","PEANUTS_ACRES_PLANTED","PEANUTS_PRICE_RECEIVED_MEASURED_IN_dollars_per_LB","PEANUTS_PRODUCTION_MEASURED_IN_LB","PEANUTS_YIELD_MEASURED_IN_LB_per_ACRE","RENT_CASH_CROPLAND_EXPENSE_MEASURED_IN_dollars_per_ACRE","RENT_CASH_CROPLAND_IRRIGATED_EXPENSE_MEASURED_IN_dollars_per_ACRE","RENT_CASH_CROPLAND_NON-IRRIGATED_EXPENSE_MEASURED_IN_dollars_per_ACRE","RENT_CASH_PASTURELAND_EXPENSE_MEASURED_IN_dollars_per_ACRE")\
+\
+colnames(data.wide) = gsub(" ", "_", colnames(data.wide))\
+colnames(data.wide) = gsub(",", "", colnames(data.wide))\
+colnames(data.wide) = gsub("$", "dollars", colnames(data.wide))\
+\
+\
+peanut.revenues <- (myDataFrame$rent_cash_cropland_Expense_indollarPerAcre + myDataFrame$rent_cash_pasturland_expense_indollarPerAcre) * myDataFrame$peanuts_acresHarv-(myDataFrame$peanuts_PriceReceiv_indollarsperLB * myDataFrame$peanuts_Prod_inLB) \
+\
+cotton.revenues <- (myDataFrame$rent_cash_cropland_Expense_indollarPerAcre + myDataFrame$rent_cash_pasturland_expense_indollarPerAcre) * myDataFrame$cotton_acreHarv-(myDataFrame$cotton_PriceReceiv_indollarPerLB * (myDataFrame$cotton_Prod_in480Lbbales * 480)) \
+\
+\
+peanut.revenues <- (data.wide$rent_cash_cropland_Expense_indollarPerAcre + data.wide$rent_cash_pasturland_expense_indollarPerAcre) * data.wide$peanuts_acresHarv-(data.wide$peanuts_PriceReceiv_indollarsperLB * data.wide$peanuts_Prod_inLB) \
+\
+cotton.revenues <- (data.wide$rent_cash_cropland_Expense_indollarPerAcre + data.wide$rent_cash_pasturland_expense_indollarPerAcre) * data.wide$cotton_acreHarv-(data.wide$cotton_PriceReceiv_indollarPerLB * (data.wide$cotton_Prod_in480Lbbales * 480)) \
+\
+\
+myDataFrame <- cbind(myDataFrame, peanut.revenues)\
+\
+\
+myDataFrame <- cbind(myDataFrame, cotton_revenues)\
+\
+\
+\
+ggplot(myDataFrame, aes(x=factor(averageComponentSize), y=step)) + stat_summary(fun.y="mean", geom="line")\
+\
+ ##################################\
+###################################\
+##############################\
+  COMPARISON 1960 to 2013  ###############\
+###########################\
+#######################\
+\
+\
+#### Line ##### PEANUTS COTTON harvest #######\
+\
+options(scipen=999)\
+\
+newgrid <- subset(data.wide, Year > 1960) \
+\
+\
+newdataGrid <- myDataFrame[ with(myDataFrame, myDataFrame$peanut_revenues | myDataFrame$cotton_revenues), ]\
+newdataGrid_recent = newdataGrid[ newdataGrid$Year >= 1960, ]\
+\
+########## COMP REVENUES #############################\
+###################################################\
+NEW_DATA <- data.frame("year"=newdataGrid_recent[is.na(newdataGrid_recent[,6])==FALSE,1], \
+                       "P"=newdataGrid_recent[is.na(newdataGrid_recent[,6])==FALSE,6],\
+                       "C"=newdataGrid_recent[is.na(newdataGrid_recent[,12])==FALSE,12])\
+\
+\
+NEW_DATA2 = data.frame("year"= rep(newdataGrid_recent[is.na(newdataGrid_recent[,6])==FALSE,1], 2),\
+                       "values" = c(newdataGrid_recent[is.na(newdataGrid_recent[,6])==FALSE,6], \
+                                    newdataGrid_recent[is.na(newdataGrid_recent[,12])==FALSE,12]),\
+                       "type" =rep(c("P","C"), each=35)\
+                       )\
+\
+ggplot(data=NEW_DATA2, aes(x=year, y=values, group = type, colour = type)) +\
+  geom_line() +\
+  geom_point( size=4, shape=21, fill="white") +\
+xlab("Year") +  #specify x and y labels\
+  ylab("Dollars") + \
+  ggtitle("Peanuts Revenues over time") #give the plot a title\
+print #display the scatterplot\
+\
+########## COMP Production #############################\
+###################################################\
+\
+j<-5\
+newdataGrid_recent[is.na(newdataGrid_recent[,j])==FALSE,1] #check years for column j\
+newdataGrid_recent[is.na(newdataGrid_recent[,j])==FALSE,j] #check values for column j\
+\
+\
+j<-10\
+newdataGrid_recent[is.na(newdataGrid_recent[,j])==FALSE,1] #check years for column j\
+newdataGrid_recent[is.na(newdataGrid_recent[,j])==FALSE,j] #check values for column j\
+\
+\
+NEW_DATA2 = data.frame("year"= rep(newdataGrid_recent[is.na(newdataGrid_recent[,5])==FALSE,1], 2),\
+                       "values" = c(newdataGrid_recent[is.na(newdataGrid_recent[,5])==FALSE,5], \
+                                    newdataGrid_recent[is.na(newdataGrid_recent[,10])==FALSE,10]),\
+                       "type" =rep(c("P","C"), each=length(newdataGrid_recent[is.na(newdataGrid_recent[,5])==FALSE,1]))\
+)\
+\
+ggplot(data=NEW_DATA2, aes(x=year, y=values, group = type, colour = type)) +\
+  geom_line() +\
+  geom_point( size=4, shape=21, fill="white") +\
+xlab("Year") +  #specify x and y labels\
+  ylab("Dollars") + \
+  ggtitle("Peanuts Production over time") #give the plot a title\
+print#display the scatterplot\
+\
+########## COMP Planting #############################\
+###################################################\
+\
+NEW_DATA2 = data.frame("year"= rep(newdataGrid_recent[is.na(newdataGrid_recent[,3])==FALSE,1], 2),\
+                       "values" = c(newdataGrid_recent[is.na(newdataGrid_recent[,3])==FALSE,3], \
+                                    newdataGrid_recent[is.na(newdataGrid_recent[,8])==FALSE,8]),\
+                       "type" =rep(c("P","C"), each=length(newdataGrid_recent[is.na(newdataGrid_recent[,3])==FALSE,1]))\
+)\
+\
+ggplot(data=NEW_DATA2, aes(x=year, y=values, group = type, colour = type)) +\
+  geom_line() +\
+  geom_point( size=4, shape=21, fill="white") +\
+xlab("Year") +  #specify x and y labels\
+  ylab("Dollars") + \
+  ggtitle("Peanuts Planting over time") #give the plot a title\
+print #display the scatterplot\
+\
+\
+#############################################\
+\
+\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=newdataGrid_recent)) + #use myDataFrame for the data, columns for x and y\
+  geom_line() +  \
+  xlab("Year") +  #specify x and y labels\
+  ylab("Dollars") + \
+  ggtitle("Peanuts Revenues over time") #give the plot a title\
+print(scatterplot) #display the scatterplot\
+\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=peanut.revenues)) + #use myDataFrame for the data, columns for x and y\
+    geom_line() +  \
+    xlab("Year") +  #specify x and y labels\
+    ylab("Dollars") + \
+    ggtitle("Peanuts Revenues over time") #give the plot a title\
+print(scatterplot) #display the scatterplot\
+\
+\
+\
+\
+\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_line(aes(colour = DataItem)) + \
+   \
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres") + \
+    ggtitle("Peanuts and Cotton harvested over time") #give the plot a title\
+print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="LinePeanutsCotton Harvest.png")\
+\
+#### Line ##### PEANUTS COTTON Planted #######\
+\
+newdataGrid <- myDataFrame[ with(myDataFrame, DataItem=='PEANUTS - ACRES PLANTED' | DataItem=='COTTON - ACRES PLANTED'), ]\
+\
+newdataGrid_recent = newdataGrid[ newdataGrid$Year >= 1960, ]\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_line(aes(colour = DataItem)) + #we want to use points, colored by runnumber\
+    xlab("Year") +  #specify x and y labels\
+    ylab("Acres") + \
+    ggtitle("Peanuts and Cotton planted over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="LinePeanutsCotton Planted.png")\
+\
+\
+#### Line ##### PEANUTS COTTON Production #######\
+\
+newdataGrid <- myDataFrame[ with(myDataFrame, DataItem=='PEANUTS - PRODUCTION, MEASURED IN LB' | DataItem=='COTTON - PRODUCTION, MEASURED IN LB '), ]\
+\
+newdataGrid_recent = newdataGrid[ newdataGrid$Year >= 1960, ]\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_line(aes(colour = DataItem)) + \
+    xlab("Year") +  #specify x and y labels\
+    ylab("Lb") + \
+    ggtitle("Peanuts and Cotton production over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="LinePeanutsCotton Production.png")\
+\
+\
+#### Line ##### PEANUTS COTTON Revenues #######\
+\
+peanut_revenues <- ("RENT_CASH_CROPLAND_EXPENSE_MEASURED_IN_dollars_per_ACRE" + "RENT_CASH_PASTURELAND_EXPENSE_MEASURED_IN_dollars_per_ACRE" ) * "PEANUTS_ACRES_HARVESTED" - ("PEANUTS_PRICE_RECEIVED_MEASURED_IN_dollars_per_LB" * "PEANUTS_PRODUCTION_MEASURED_IN_LB")\
+\
+\
+peanut_revenues <- (newdata$rent_cash_cropland_Expense_indollarPerAcre + newdata$rent_cash_pasturland_expense_indollarPerAcre + newdata$rent_cash_cropland_Expense_indollarPerAcre) * newdata$peanuts_acresHarv\
+- (newdata$peanuts_PriceReceiv_indollarsperLB * newdata$peanuts_Prod_inLB) \
+\
+\
+newdataGrid <- myDataFrame[ with(myDataFrame, DataItem=='PEANUTS - PRODUCTION, MEASURED IN LB' | DataItem=='COTTON - PRODUCTION, MEASURED IN LB '), ]\
+\
+newdataGrid_recent = newdataGrid[ newdataGrid$Year >= 1960, ]\
+\
+scatterplot = ggplot(data = myDataFrame, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+  geom_line(aes(colour = DataItem)) + \
+  xlab("Year") +  #specify x and y labels\
+  ylab("Lb") + \
+  ggtitle("Peanuts and Cotton production over time") #give the plot a title\
+print(scatterplot) #display the scatterplot\
+\
+\
+\
+\
+\
+scatterplot = ggplot(data = newdataGrid_recent, aes(x=Year, y=Value)) + #use myDataFrame for the data, columns for x and y\
+    geom_line(aes(colour = DataItem)) + \
+    xlab("Year") +  #specify x and y labels\
+    ylab("Lb") + \
+    ggtitle("Peanuts and Cotton production over time") #give the plot a title\
+    print(scatterplot) #display the scatterplot\
+ggsave(scatterplot, file="LinePeanutsCotton Production.png")\
+\
+ggplot(data = newdataGrid_recent, aes(x=Year, y=peanut.revenues))\
+}
